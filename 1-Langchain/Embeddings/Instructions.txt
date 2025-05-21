@@ -1,0 +1,36 @@
+Title: Using 1024-Dimensional Hugging Face Embeddings with LangChain
+
+🔧 Step 1: Set Up Your Python Environment
+
+Create and activate a virtual environment (optional but recommended):
+
+Windows:
+    python -m venv venv
+    venv\Scripts\activate
+
+Linux/macOS:
+    python3 -m venv venv
+    source venv/bin/activate
+
+
+Step 2: Install Required Packages
+
+Install the required Python packages:
+
+    pip install langchain langchain-community sentence-transformers torch
+
+Step 3: Use a 1024-Dimensional Embedding Model
+
+The `intfloat/e5-large-v2` model outputs 1024-dimensional embeddings.
+
+Python code:
+
+python
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+Load 1024-dim embedding model
+embedding_model = HuggingFaceEmbeddings(model_name="intfloat/e5-large-v2")
+
+Embed a query
+embedding_vector = embedding_model.embed_query("query: What is quantum computing?")
+print(len(embedding_vector))  # Output will be 1024
