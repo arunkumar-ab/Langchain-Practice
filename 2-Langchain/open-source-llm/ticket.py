@@ -9,13 +9,14 @@ import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime
+
 import uuid
 
 # Load environment variables
 load_dotenv()
 
 # Configure API and model
-groq_api_key = os.getenv("GROQ_API_KEY")
+groq_api_key = "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"
 if not groq_api_key:
     raise ValueError("GROQ_API_KEY not found in environment variables")
 
@@ -30,6 +31,8 @@ class TicketInfo(BaseModel):
     emp_id: str = Field(description="Employee ID of the person raising the ticket")
     name: str = Field(description="Full name of the employee")
     date: str = Field(description="Date when the ticket is raised (YYYY-MM-DD format)")
+    # time: str = Field(description="Time of ticket raised")
+    location: str = Field(description="City or office location of the employee")
     country: str = Field(description="Country where the employee is located")
     category: str = Field(description="Category of the ticket (e.g. IT Support, HR, Facilities)")
     description: str = Field(description="Detailed description of the issue")
@@ -41,7 +44,6 @@ class ChatMessage(BaseModel):
 
 # Ticket response
 class TicketResponse(BaseModel):
-    ticket_id: str
     extracted_info: TicketInfo
     created_at: str
 
@@ -55,10 +57,12 @@ Parse the user's message and extract the following information in JSON format:
 1. Employee ID (emp_id)
 2. Full name (name)
 3. Date (in YYYY-MM-DD format, default to today if not specified)
-4. Country (country)
-5. Category of the issue (category)
-6. Detailed description of the issue (description)
-7. Severity level (severity: Low, Medium, High, Critical)
+# 4. Time (in 24hrs format, get from created at time from web time)
+5. Location (location — include full office location or branch name, e.g., "Victor, Bangalore, Anchor, Bangalore")
+6. Country (country)
+7. Category of the issue (category)
+8. Detailed description of the issue (description)
+9. Severity level (severity: Low, Medium, High, Critical)
 
 If any information is missing, make a reasonable inference based on the context. If you can't infer a value, use a placeholder and mark it for follow-up.
 
@@ -95,13 +99,14 @@ app.add_middleware(
 
 # Simple in-memory ticket storage
 tickets_db = {}
-
-@app.post("/extract-ticket-info", response_model=TicketResponse)
-async def extract_ticket_info(chat_message: ChatMessage):
+@app.post("/chat")
+async def chat(chat_message: ChatMessage):
     """
     Extract structured ticket information from a chat message
     """
     try:
+        now = datetime.now()
+
         # Process the message with the extraction chain
         extracted_info = extraction_chain.invoke({"message": chat_message.message})
 
@@ -110,14 +115,14 @@ async def extract_ticket_info(chat_message: ChatMessage):
         created_at = datetime.now().isoformat()
         
         # Store the ticket in our simple database
-        tickets_db[ticket_id] = {
+        tickets_db[created_at] = {
             "extracted_info": extracted_info.dict() if hasattr(extracted_info, "dict") else extracted_info,
             "created_at": created_at
         }
         
         # Return the response
         return TicketResponse(
-            ticket_id=ticket_id,
+            # ticket_id="1",
             extracted_info=extracted_info,
             created_at=created_at
         )
